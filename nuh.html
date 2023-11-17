@@ -142,3 +142,36 @@
                         },
                         body: JSON.stringify({ name: fileName, data: mergedData })
                     })
+                        .then(response => response.json())
+                        .then(result => alert(result.message))
+                        .catch(error => console.error('Error updating JSON:', error));
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+        }
+
+        function createNewFile() {
+            const newFileName = prompt('Enter a name for the new JSON file:');
+            if (newFileName) {
+                // Add the new file to the dropdown and select it
+                const newOption = document.createElement('option');
+                newOption.value = newFileName;
+                newOption.textContent = newFileName;
+                fileSelector.appendChild(newOption);
+                fileSelector.value = newFileName;
+                fileSelector.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function filterFiles() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const options = fileSelector.options;
+
+            for (let i = 0; i < options.length; i++) {
+                const fileName = options[i].value.toLowerCase();
+                options[i].style.display = fileName.includes(searchTerm) ? 'block' : 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
