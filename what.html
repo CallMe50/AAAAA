@@ -93,7 +93,7 @@
         const ipv4AddressInput = document.getElementById('ipv4Address');
 
         // Fetch the user's IPv4 address
-        fetch('https://api64.ipify.org?format=json')
+        fetch('https://api.ipify.org?format=json')
             .then(response => response.json())
             .then(data => {
                 const ipv4Address = data.ip;
