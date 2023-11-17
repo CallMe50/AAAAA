@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Editor</title>
+    <style>
+        body {
+            max-width: 1000px;
+            margin: auto;
+            font-family: 'Dosis', sans-serif; /* Change to Dosis Bold */
+            line-height: 1.6;
+            padding: 20px;
+            background: linear-gradient(to bottom, #000000, #000080);
+            color: #ffffff;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff; /* White text */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffffff; /* White text */
+        }
+
+        .dark-box {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: rgba(0, 0, 0, 0.5); /* Dark and slightly transparent background */
+            color: #ffffff; /* White text */
+            font-family: 'Dosis', sans-serif; /* Change to Dosis Bold */
+        }
+
+        textarea {
+            height: 500px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: 'Dosis', sans-serif; /* Change to Dosis Bold */
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #ipv4Address {
+            margin-top: 10px;
+            color: #ffffff; /* White text */
+            font-family: 'Dosis', sans-serif; /* Change to Dosis Bold */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>JSON Editor</h1>
+
+    <label for="search">Search for a JSON file:</label>
+    <input type="text" id="search" class="dark-box" oninput="filterFiles()">
+
+    <label for="fileSelector">Select or create a JSON file:</label>
+    <select id="fileSelector" class="dark-box"></select>
+    <button onclick="createNewFile()">Create New File</button>
+
+    <label for="updatedData">Update JSON data:</label>
+    <textarea id="updatedData" class="dark-box" rows="4" cols="50"></textarea>
+
+    <button onclick="updateJson()">Update JSON</button>
+
+    <label for="ipv4Address">Your IPv4 Address:</label>
+    <input type="text" id="ipv4Address" class="dark-box" readonly>
+
+    <script>
+        const fileSelector = document.getElementById('fileSelector');
+        const updatedDataTextarea = document.getElementById('updatedData');
+        const searchInput = document.getElementById('search');
+        const ipv4AddressInput = document.getElementById('ipv4Address');
+
+        // Fetch the user's IPv4 address
+        fetch('https://api64.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                const ipv4Address = data.ip;
+                ipv4AddressInput.value = ipv4Address;
+            })
+            .catch(error => console.error('Error fetching IPv4 address:', error));
+
+        // Fetch the list of all JSON files
+        fetch('http://23.95.107.81:5000/all-json')
+            .then(response => response.json())
+            .then(files => {
+                // Populate the dropdown with file names
+                fileSelector.innerHTML = files.map(fileName => `<option value="${fileName}">${fileName}</option>`).join('');
+
+                // Trigger the change event to load the first file initially
+                fileSelector.dispatchEvent(new Event('change'));
+            })
+            .catch(error => console.error('Error fetching file list:', error));
+
+        fileSelector.addEventListener('change', function (event) {
+            const fileName = event.target.value;
+
+            fetch(`http://23.95.107.81:5000/load-json/${fileName}`)
+                .then(response => response.json())
+                .then(jsonData => {
+                    // Set the JSON data in the "Update JSON data" textarea
+                    updatedDataTextarea.value = JSON.stringify(jsonData, null, 2);
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+        });
+
+        function updateJson() {
+            const fileName = fileSelector.value;
+            const updatedData = updatedDataTextarea.value;
+
+            fetch(`http://23.95.107.81:5000/load-json/${fileName}`)
+                .then(response => response.json())
+                .then(originalData => {
+                    const newData = JSON.parse(updatedData);
+                    const mergedData = { ...originalData, ...newData };
+
+                    fetch(`http://23.95.107.81:5000/save-json`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name: fileName, data: mergedData })
+                    })
+                        .then(response => response.json())
+                        .then(result => alert(result.message))
+                        .catch(error => console.error('Error updating JSON:', error));
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+        }
+
+        function createNewFile() {
+            const newFileName = prompt('Enter a name for the new JSON file:');
+            if (newFileName) {
+                // Add the new file to the dropdown and select it
+                const newOption = document.createElement('option');
+                newOption.value = newFileName;
+                newOption.textContent = newFileName;
+                fileSelector.appendChild(newOption);
+                fileSelector.value = newFileName;
+                fileSelector.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function filterFiles() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const options = fileSelector.options;
+
+            for (let i = 0; i < options.length; i++) {
+                const fileName = options[i].value.toLowerCase();
+                options[i].style.display = fileName.includes(searchTerm) ? 'block' : 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
